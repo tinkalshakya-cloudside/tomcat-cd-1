@@ -1,0 +1,35 @@
+ steps:
+ - name: gcr.io/cloud-builders/gcloud
+   args:
+     - '-c'
+     - >-
+       gcloud compute instances create tomcat-vm1-1 --image=tomcat-image --zone=asia-south1-a \
+       --metadata=startup-script='#! /bin/bash 
+         gsutil cp -r gs://tinkal-bs/* /opt/tomcat/webapps'
+   entrypoint: bash
+ - name: gcr.io/cloud-builders/gcloud
+   args:
+     - '-c'
+     - |
+       echo "Waiting for 2 minutes for running startup script..."
+       sleep 120
+       echo "startup script run Completed"
+   entrypoint: bash
+ - name: gcr.io/cloud-builders/gcloud
+   args:
+     - '-c'
+     - >-
+       gcloud compute images create tomcat-image-gold-1 --source-disk=tomcat-vm1-1 --source-disk-zone=asia-south1-a --storage-location=asia-south1 --force
+   entrypoint: bash
+ - name: gcr.io/cloud-builders/gcloud
+   args:
+     - '-c'
+     - >-
+       gcloud compute instance-templates create instance-template-tomcat-1 --boot-disk-type=pd-balanced --machine-type=e2-medium --image=tomcat-image-gold-1 --boot-disk-size=10
+   entrypoint: bash
+ - name: gcr.io/cloud-builders/gcloud
+   args:
+     - '-c'
+     - >-
+       gcloud compute instance-groups managed rolling-action start-update tomcat-instance-group-1 --version=template=instance-template-tomcat-1 --zone=asia-south1-a
+   entrypoint: bash
